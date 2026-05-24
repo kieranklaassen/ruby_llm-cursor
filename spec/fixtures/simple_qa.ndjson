@@ -1,0 +1,8 @@
+{"type":"system","subtype":"init","apiKeySource":"env","cwd":"/tmp/ws","session_id":"sess-simple","model":"Composer 2.5","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"What is 2+2? Reply with just the number."}]},"session_id":"sess-simple"}
+{"type":"thinking","subtype":"delta","text":"The user wants to know","session_id":"sess-simple","timestamp_ms":1779660733666}
+{"type":"thinking","subtype":"delta","text":" the result of 2 plus","session_id":"sess-simple","timestamp_ms":1779660733667}
+{"type":"thinking","subtype":"delta","text":" 2.","session_id":"sess-simple","timestamp_ms":1779660733667}
+{"type":"thinking","subtype":"completed","session_id":"sess-simple","timestamp_ms":1779660733668}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"4"}]},"session_id":"sess-simple"}
+{"type":"result","subtype":"success","duration_ms":5703,"duration_api_ms":5703,"is_error":false,"result":"4","session_id":"sess-simple","request_id":"req-1","usage":{"inputTokens":33052,"outputTokens":34,"cacheReadTokens":4823,"cacheWriteTokens":0}}
