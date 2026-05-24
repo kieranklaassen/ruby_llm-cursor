@@ -1,0 +1,4 @@
+{"type":"system","subtype":"init","apiKeySource":"env","cwd":"/tmp/ws","session_id":"sess-stream","model":"Composer 2.5","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Now reverse that list."}]},"session_id":"sess-stream"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Blue, Yellow, Red"}]},"session_id":"sess-stream"}
+{"type":"result","subtype":"success","duration_ms":5056,"is_error":false,"result":"Blue, Yellow, Red","session_id":"sess-stream","request_id":"req-3","usage":{"inputTokens":295,"outputTokens":37,"cacheReadTokens":37875,"cacheWriteTokens":0}}
