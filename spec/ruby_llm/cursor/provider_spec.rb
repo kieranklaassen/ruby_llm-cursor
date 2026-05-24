@@ -72,12 +72,14 @@ RSpec.describe RubyLLM::Cursor::Provider do
   describe "#complete (streaming)" do
     subject(:provider) { provider_with(load_events("streaming_deltas")) }
 
-    it "yields chunks whose concatenated text equals the final content" do
+    it "streams incremental text without duplicating the consolidated block" do
       chunks = []
       message = provider.complete([user("colors")], model: "composer-2.5") { |chunk| chunks << chunk }
       streamed = chunks.map { |chunk| chunk.content.to_s }.join
+      # The fixture ends with a consolidated full-text assistant event; it must
+      # NOT be re-streamed (that previously doubled the output).
+      expect(streamed).to eq("Red, Yellow, Blue")
       expect(message.content).to eq("Red, Yellow, Blue")
-      expect(streamed).to eq(message.content)
     end
 
     it "requests partial output when a block is given" do
@@ -127,6 +129,21 @@ RSpec.describe RubyLLM::Cursor::Provider do
       call = provider.instance_variable_get(:@cli).calls.first
       expect(call[:mode]).to eq(:plan)
       expect(call[:force]).to be(false)
+    end
+  end
+
+  describe "content fallback when result is blank" do
+    let(:events) do
+      [
+        { "type" => "system", "session_id" => "s1" },
+        { "type" => "assistant", "message" => { "content" => [{ "type" => "text", "text" => "42" }] } },
+        { "type" => "result", "result" => "", "usage" => { "inputTokens" => 1, "outputTokens" => 1 } }
+      ]
+    end
+
+    it "uses the assistant message when cursor-agent returns an empty result" do
+      message = provider_with(events).complete([user("which number?")], model: "x")
+      expect(message.content).to eq("42")
     end
   end
 

@@ -24,12 +24,31 @@ module RubyLLM
         event["session_id"] if event["type"] == "system"
       end
 
-      # Assistant text. A fragment when --stream-partial-output is set, otherwise
-      # the full message text. nil for non-assistant events.
+      def assistant?(event)
+        event["type"] == "assistant"
+      end
+
+      # Assistant text (a fragment for deltas, full text for consolidated events).
+      # nil for non-assistant events.
       def assistant_text(event)
-        return nil unless event["type"] == "assistant"
+        return nil unless assistant?(event)
 
         extract_text(event.dig("message", "content"))
+      end
+
+      # With --stream-partial-output the CLI emits incremental delta events
+      # (each carries timestamp_ms and no model_call_id) followed by a
+      # consolidated full-text event for the block (carries model_call_id, or —
+      # for the final block — neither field). Only deltas should be streamed;
+      # consolidated events repeat text already seen and would double it.
+      def assistant_delta?(event)
+        assistant?(event) && event.key?("timestamp_ms") && !event.key?("model_call_id")
+      end
+
+      # A consolidated/full assistant message (not an incremental delta). Used as
+      # a content fallback when no result event is present.
+      def assistant_complete?(event)
+        assistant?(event) && !assistant_delta?(event)
       end
 
       def thinking_text(event)
