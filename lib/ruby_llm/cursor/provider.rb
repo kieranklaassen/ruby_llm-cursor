@@ -45,7 +45,8 @@ module RubyLLM
         mode = mutation_mode(cursor)
 
         events = []
-        text = +""
+        delta_text = +""
+        last_full = nil
         thoughts = +""
         result_text = nil
         usage = nil
@@ -64,9 +65,14 @@ module RubyLLM
           on_event&.call(event) # R9: every raw event, in order, to subscribers
           @session_id ||= EventMapper.session_id(event)
 
-          if (fragment = EventMapper.assistant_text(event))
-            text << fragment
+          if EventMapper.assistant_delta?(event)
+            fragment = EventMapper.assistant_text(event)
+            delta_text << fragment
             block.call(text_chunk(fragment, model_id)) if streaming
+          elsif EventMapper.assistant_complete?(event)
+            # Consolidated repeat of an already-streamed block — never re-stream
+            # it (that doubled the output); keep it only as a content fallback.
+            last_full = EventMapper.assistant_text(event)
           elsif (thought = EventMapper.thinking_text(event))
             thoughts << thought
             block.call(thinking_chunk(thought, model_id)) if streaming
@@ -77,7 +83,11 @@ module RubyLLM
         end
 
         mark_forwarded(messages)
-        build_message(result_text || text, thoughts, usage, model_id, events)
+        # Prefer the result text, but fall back to the last full assistant message
+        # or the streamed deltas when result is blank (cursor-agent occasionally
+        # emits an empty result even though assistant text was produced).
+        content = first_present(result_text, last_full, delta_text)
+        build_message(content, thoughts, usage, model_id, events)
       end
 
       class << self
@@ -107,6 +117,11 @@ module RubyLLM
       def cursor_params(params)
         value = (params || {})[:cursor]
         value.is_a?(Hash) ? value : {}
+      end
+
+      # First candidate that is non-nil and not blank (treats "" as absent).
+      def first_present(*candidates)
+        candidates.find { |candidate| candidate && !candidate.to_s.strip.empty? }
       end
 
       # The newest user message not yet forwarded to the agent. On the first turn

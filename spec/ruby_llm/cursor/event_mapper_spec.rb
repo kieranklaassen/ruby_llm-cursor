@@ -15,6 +15,22 @@ RSpec.describe RubyLLM::Cursor::EventMapper do
     expect(described_class.assistant_text({ "type" => "result", "result" => "x" })).to be_nil
   end
 
+  it "distinguishes streamed deltas from consolidated assistant events" do
+    delta = { "type" => "assistant", "timestamp_ms" => 5,
+              "message" => { "content" => [{ "type" => "text", "text" => "Red" }] } }
+    mid_consolidated = { "type" => "assistant", "timestamp_ms" => 6, "model_call_id" => "m1",
+                         "message" => { "content" => [{ "type" => "text", "text" => "Red, Blue" }] } }
+    final_consolidated = { "type" => "assistant",
+                           "message" => { "content" => [{ "type" => "text", "text" => "Red, Blue" }] } }
+
+    expect(described_class.assistant_delta?(delta)).to be(true)
+    expect(described_class.assistant_complete?(delta)).to be(false)
+    expect(described_class.assistant_delta?(mid_consolidated)).to be(false)
+    expect(described_class.assistant_complete?(mid_consolidated)).to be(true)
+    expect(described_class.assistant_delta?(final_consolidated)).to be(false)
+    expect(described_class.assistant_complete?(final_consolidated)).to be(true)
+  end
+
   it "extracts thinking deltas but not the completed marker" do
     expect(described_class.thinking_text({ "type" => "thinking", "subtype" => "delta", "text" => "t" })).to eq("t")
     expect(described_class.thinking_text({ "type" => "thinking", "subtype" => "completed" })).to be_nil
