@@ -1,0 +1,11 @@
+{"type":"system","subtype":"init","apiKeySource":"env","cwd":"/tmp/ws","session_id":"sess-stream","model":"Composer 2.5","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Name three primary colors, comma separated."}]},"session_id":"sess-stream"}
+{"type":"thinking","subtype":"delta","text":"Listing primary colors.","session_id":"sess-stream","timestamp_ms":1}
+{"type":"thinking","subtype":"completed","session_id":"sess-stream","timestamp_ms":2}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Red"}]},"session_id":"sess-stream","timestamp_ms":3}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":", "}]},"session_id":"sess-stream","timestamp_ms":4}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Yellow"}]},"session_id":"sess-stream","timestamp_ms":5}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":", "}]},"session_id":"sess-stream","timestamp_ms":6}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Blue"}]},"session_id":"sess-stream","timestamp_ms":7}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Red, Yellow, Blue"}]},"session_id":"sess-stream"}
+{"type":"result","subtype":"success","duration_ms":100,"is_error":false,"result":"Red, Yellow, Blue","session_id":"sess-stream","request_id":"req-2","usage":{"inputTokens":50,"outputTokens":5,"cacheReadTokens":0,"cacheWriteTokens":0}}
