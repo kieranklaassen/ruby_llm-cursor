@@ -27,6 +27,8 @@ gem "ruby_llm"
 gem "ruby_llm-cursor"
 ```
 
+Requires RubyLLM 2.0.0.rc3 or newer (below 3.0).
+
 Requires the Cursor CLI on your PATH:
 
 ```bash
@@ -87,13 +89,13 @@ loop:
 
 ```ruby
 chat = RubyLLM.chat(model: "composer-2.5", provider: :cursor)
-chat.with_params(cursor: { on_event: ->(event) { p event["type"] } })
+chat.with_provider_options(cursor: { on_event: ->(event) { p event["type"] } })
 chat.ask("Refactor the utils module", )
 ```
 
 ## Safety
 
-`cursor_mutation_mode` (or a per-call `with_params(cursor: { mutation_mode: … })`)
+`cursor_mutation_mode` (or a per-chat `with_provider_options(cursor: { mutation_mode: … })`)
 controls what the agent may do:
 
 | Mode      | Behavior                                                        |
@@ -104,7 +106,7 @@ controls what the agent may do:
 
 `:agent` runs headless with auto-approval (`--force`), so use it only against a
 working directory you trust. Set the workspace with `config.cursor_default_cwd`
-or `with_params(cursor: { workspace: "/path/to/project" })`.
+or `with_provider_options(cursor: { workspace: "/path/to/project" })`.
 
 ## Limitations
 

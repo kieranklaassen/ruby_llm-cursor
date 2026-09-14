@@ -13,7 +13,7 @@ module RubyLLM
         message = scrub(raw.strip, api_key)
         message = "cursor-agent exited with status #{status}" if message.empty?
 
-        error_class_for(raw).new(nil, message)
+        error_class_for(raw).new(message)
       end
 
       def error_class_for(stderr)
