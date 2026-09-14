@@ -33,12 +33,11 @@ module RubyLLM
       # Injection seam for tests.
       attr_writer :cli
 
-      def complete(messages, tools: {}, temperature: nil, model: nil, params: {}, headers: {},
-                   schema: nil, thinking: nil, tool_prefs: nil, &block)
-        cursor = cursor_params(params)
+      def complete(messages, model: nil, provider_options: {}, **_options, &block)
+        cursor = cursor_params(provider_options)
         on_event = cursor[:on_event]
         prompt = next_prompt(messages)
-        raise RubyLLM::Error.new(nil, "cursor provider: no new user message to send") if prompt.nil?
+        raise RubyLLM::Error, "cursor provider: no new user message to send" if prompt.nil?
 
         streaming = block_given?
         model_id = model.respond_to?(:id) ? model.id : model
@@ -90,12 +89,18 @@ module RubyLLM
         build_message(content, thoughts, usage, model_id, events)
       end
 
+      # Cursor consumes message text itself, so it has no protocol-level
+      # attachment preprocessing to perform.
+      def preprocess_message(message, **_options)
+        message
+      end
+
       class << self
         def slug
           "cursor"
         end
 
-        def name
+        def display_name
           "Cursor"
         end
 
@@ -110,12 +115,16 @@ module RubyLLM
         def assume_models_exist?
           true
         end
+
+        def local?
+          true
+        end
       end
 
       private
 
-      def cursor_params(params)
-        value = (params || {})[:cursor]
+      def cursor_params(provider_options)
+        value = (provider_options || {})[:cursor]
         value.is_a?(Hash) ? value : {}
       end
 
@@ -171,13 +180,13 @@ module RubyLLM
       end
 
       def text_chunk(text, model_id)
-        RubyLLM::Chunk.new(role: :assistant, model_id: model_id, content: text)
+        RubyLLM::Chunk.new(role: :assistant, model: model_id, content: text)
       end
 
       def thinking_chunk(text, model_id)
         RubyLLM::Chunk.new(
           role: :assistant,
-          model_id: model_id,
+          model: model_id,
           content: "",
           thinking: RubyLLM::Thinking.build(text: text)
         )
@@ -188,12 +197,12 @@ module RubyLLM
         RubyLLM::Message.new(
           role: :assistant,
           content: content.to_s.empty? ? nil : content,
-          model_id: model_id,
+          model: model_id,
           thinking: RubyLLM::Thinking.build(text: thoughts),
           input_tokens: usage[:input],
           output_tokens: usage[:output],
-          cached_tokens: usage[:cached],
-          cache_creation_tokens: usage[:cache_creation],
+          cache_read_tokens: usage[:cached],
+          cache_write_tokens: usage[:cache_creation],
           raw: events
         )
       end

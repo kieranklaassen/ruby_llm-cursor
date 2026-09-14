@@ -23,5 +23,5 @@ Gem::Specification.new do |spec|
   spec.files = Dir["lib/**/*.rb"] + ["README.md", "LICENSE"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "ruby_llm", "~> 1.15"
+  spec.add_dependency "ruby_llm", ">= 2.0.0.rc3", "< 3"
 end

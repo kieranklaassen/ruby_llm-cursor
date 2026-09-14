@@ -25,6 +25,11 @@ RSpec.describe RubyLLM::Cursor::Provider do
       expect { RubyLLM.chat(model: "totally-made-up-model", provider: :cursor) }.not_to raise_error
     end
 
+    it "identifies itself as a local provider" do
+      expect(described_class.display_name).to eq("Cursor")
+      expect(described_class.local?).to be(true)
+    end
+
     it "exposes configuration options through RubyLLM.configure" do
       RubyLLM.configure do |c|
         c.cursor_api_key = "sk-test"
@@ -52,9 +57,10 @@ RSpec.describe RubyLLM::Cursor::Provider do
 
     it "captures token usage from the result event" do
       message = provider.complete([user("hi")], model: "composer-2.5")
-      expect(message.input_tokens).to eq(33_052)
-      expect(message.output_tokens).to eq(34)
-      expect(message.cached_tokens).to eq(4823)
+      expect(message.tokens.input).to eq(33_052)
+      expect(message.tokens.output).to eq(34)
+      expect(message.tokens.cache_read).to eq(4823)
+      expect(message.tokens.cache_write).to eq(0)
     end
 
     it "routes thinking into Message#thinking, not content" do
@@ -102,7 +108,9 @@ RSpec.describe RubyLLM::Cursor::Provider do
     it "delivers every raw event, in order, to an on_event callback" do
       seen = []
       provider_with(events).complete(
-        [user("do it")], model: "x", params: { cursor: { on_event: ->(e) { seen << e["type"] } } }
+        [user("do it")],
+        model: "x",
+        provider_options: { cursor: { on_event: ->(e) { seen << e["type"] } } }
       )
       expect(seen).to eq(%w[system tool_call assistant result])
     end
@@ -118,17 +126,35 @@ RSpec.describe RubyLLM::Cursor::Provider do
     subject(:provider) { provider_with(load_events("simple_qa")) }
 
     it "agent mode drops --mode and forces approval" do
-      provider.complete([user("x")], model: "x", params: { cursor: { mutation_mode: :agent } })
+      provider.complete([user("x")], model: "x", provider_options: { cursor: { mutation_mode: :agent } })
       call = provider.instance_variable_get(:@cli).calls.first
       expect(call[:mode]).to be_nil
       expect(call[:force]).to be(true)
     end
 
     it "plan mode passes --mode plan and does not force" do
-      provider.complete([user("x")], model: "x", params: { cursor: { mutation_mode: :plan } })
+      provider.complete([user("x")], model: "x", provider_options: { cursor: { mutation_mode: :plan } })
       call = provider.instance_variable_get(:@cli).calls.first
       expect(call[:mode]).to eq(:plan)
       expect(call[:force]).to be(false)
+    end
+  end
+
+  describe "RubyLLM chat integration" do
+    it "completes through the RubyLLM 2 request pipeline" do
+      seen = []
+      fake_cli = FakeCLI.new(load_events("simple_qa"))
+      chat = RubyLLM.chat(model: "composer-2.5", provider: :cursor)
+      chat.provider.cli = fake_cli
+      chat.with_provider_options(cursor: { mutation_mode: :plan, on_event: ->(event) { seen << event["type"] } })
+
+      message = chat.ask("What is 2+2?")
+
+      expect(message.content).to eq("4")
+      expect(message.model).to eq("composer-2.5")
+      expect(message.tokens.input).to eq(33_052)
+      expect(fake_cli.calls.first[:mode]).to eq(:plan)
+      expect(seen).to eq(%w[system user thinking thinking thinking thinking assistant result])
     end
   end
 
